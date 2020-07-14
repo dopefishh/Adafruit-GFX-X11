@@ -13,4 +13,8 @@ And then run `make` to build the test executable.
 
 ## License
 
-Adafruit-GFX-Library is `BSD` and so is this library.
+Adafruit-GFX-Library is [BSD](LICENSE.gfx).
+
+The modified arduino files are licensed [GPL2.1 or later](LICENSE.arduino).
+
+This library is licensed [GPL2.1 or later](LICENSE) as well
