@@ -3,6 +3,9 @@
 
 #include <X11/Xlib.h>
 
+#ifndef ARDUINO
+#define ARDUINO 200
+#endif
 #include "Adafruit_GFX.h"
 
 #define X11_BLACK 0

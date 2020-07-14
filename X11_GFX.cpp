@@ -1,7 +1,7 @@
 #include <X11/Xlib.h>
 
-#include "Adafruit_GFX.h"
 #include "X11_GFX.h"
+#include "Adafruit_GFX.h"
 
 #define r(a, s) ((int)((double)a*s))
 

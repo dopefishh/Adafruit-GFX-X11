@@ -1,4 +1,4 @@
-CPPFLAGS+=-Wall -Wextra -DARDUINO=200 -I. -I./Adafruit-GFX-Library
+CPPFLAGS+=-DARDUINO=200 -Wall -Wextra -I. -I./Adafruit-GFX-Library
 CPPFLAGS+=$(shell pkg-config --cflags x11)
 LDLIBS+=$(shell pkg-config --libs x11)
 
