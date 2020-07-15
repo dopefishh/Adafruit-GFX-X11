@@ -3,15 +3,14 @@
 #include "X11_GFX.h"
 #include "Adafruit_GFX.h"
 
-#define r(a, s) ((int)((double)a*s))
+#define r(a) ((int)((double)a*sc + sc/2.0))
 
-X11_GFX::X11_GFX(Display *display, int w, int h, double xscale, double yscale,
+X11_GFX::X11_GFX(Display *display, int w, int h, double scale,
 	const char *title)
 	: Adafruit_GFX(w, h)
 {
 	disp = display;
-	xs = xscale;
-	ys = yscale;
+	sc = scale < 1.0 ? 1.0 : scale;
 
 	// Get some colors
 	black = BlackPixel(disp, DefaultScreen(disp));
@@ -19,8 +18,9 @@ X11_GFX::X11_GFX(Display *display, int w, int h, double xscale, double yscale,
 
 	// Create the window
 	win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0,
-		w*xs, h*ys, 0, black, black);
+		r(w), r(h), 0, black, black);
 
+	// Set the title
 	XStoreName(disp, win, title);
 
 	// We want to get MapNotify events
@@ -31,6 +31,8 @@ X11_GFX::X11_GFX(Display *display, int w, int h, double xscale, double yscale,
 
 	// Create a "Graphics Context"
 	gc = XCreateGC(disp, win, 0, NULL);
+	XSetLineAttributes(disp, gc, (int)sc, LineSolid, CapNotLast,
+		JoinMiter);
 
 	// Wait for the MapNotify event
 	for(;;) {
@@ -42,14 +44,16 @@ X11_GFX::X11_GFX(Display *display, int w, int h, double xscale, double yscale,
 
 	XSetBackground(disp, gc, white);
 	XSetForeground(disp, gc, black);
-
-	// Send the "DrawLine" request to the server
-	XFlush(disp);
 }
-X11_GFX::X11_GFX(Display *display, int w, int h, double xscale, double yscale)
-	: X11_GFX(display, w, h, xscale, yscale, "GFX Window") {}
+
+X11_GFX::X11_GFX(Display *display, int w, int h, double scale)
+	: X11_GFX(display, w, h, scale, "GFX Window") {}
+
 X11_GFX::X11_GFX(Display *display, int w, int h)
-	: X11_GFX(display, w, h, 1, 1) {}
+	: X11_GFX(display, w, h, 1.0) {}
+
+X11_GFX::X11_GFX(Display *display)
+	: X11_GFX(display, 100, 100) {}
 
 X11_GFX::~X11_GFX(void)
 {
@@ -64,62 +68,32 @@ void X11_GFX::setDrawColor(uint16_t color)
 
 void X11_GFX::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
-	setDrawColor(color);
-	XDrawPoint(disp, win, gc, r(x, xs), r(y, ys));
-	XFlush(disp);
+	startWrite();
+	writePixel(x, y, color);
+	endWrite();
 }
 
-void X11_GFX::startWrite(void) { }
 void X11_GFX::writePixel(int16_t x, int16_t y, uint16_t color)
 {
 	setDrawColor(color);
-	XDrawPoint(disp, win, gc, r(x, xs), r(y, ys));
+	XFillRectangle(disp, win, gc, r(x), r(y), sc, sc);
 }
-void X11_GFX::writeFillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
+
+void X11_GFX::writeFillRect(int16_t x, int16_t y, int16_t w, int16_t h,
+	uint16_t color)
 {
 	setDrawColor(color);
-	XFillRectangle(disp, win, gc, r(x, xs), r(y, ys), r(w, xs), r(h, ys));
+	XFillRectangle(disp, win, gc, r(x), r(y), r(w), r(h));
 }
-void X11_GFX::writeFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
-{
-	setDrawColor(color);
-	XDrawLine(disp, win, gc, r(x, xs), r(y, ys), r(x, xs), r(y+h, ys));
-}
-void X11_GFX::writeFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
-{
-	setDrawColor(color);
-	XDrawLine(disp, win, gc, r(x, xs), r(y, ys), r(x+w, xs), r(y, ys));
-}
+
 void X11_GFX::writeLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
 	uint16_t color)
 {
 	setDrawColor(color);
-	XDrawLine(disp, win, gc, r(x0, xs), r(y0, ys), r(x1, xs), r(y1, ys));
+	XDrawLine(disp, win, gc, r(x0), r(y0), r(x1), r(y1));
 }
+
 void X11_GFX::endWrite(void)
 {
 	XFlush(disp);
-}
-
-void X11_GFX::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
-{
-	startWrite();
-	writeFastVLine(x, y, h, color);
-	endWrite();
-}
-void X11_GFX::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
-{
-	startWrite();
-	writeFastHLine(x, y, w, color);
-	endWrite();
-}
-void X11_GFX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
-{
-	startWrite();
-	writeFillRect(x, y, w, h, color);
-	endWrite();
-}
-void X11_GFX::fillScreen(uint16_t color)
-{
-	fillRect(0, 0, r(WIDTH, xs), r(HEIGHT, ys), color);
 }
